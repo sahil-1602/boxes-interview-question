@@ -2,50 +2,41 @@ import { useEffect, useState } from 'react';
 import './App.css';
 
 function App() {
-  const [noOfBoxesClicked, setNoOfBoxesClicked] = useState([]);
+  const [boxState, setBoxState] = useState(getBoxes('initial'));
+  const [order, setOrder] = useState(0);
+  const [isAllClicked, setIsAllClicked] = useState(false);
+
   const noOfBoxes = 7;
 
-  const changeToGreen = (e) => {
-    if (
-      !e.target.classList.contains('apply-animation-green') &&
-      noOfBoxesClicked.length < noOfBoxes
-    ) {
-      e.target.classList.add('apply-animation-green');
-      setNoOfBoxesClicked(() => [...noOfBoxesClicked, e.target]);
-    }
+  const changeToGreen = (i, j) => {
+    let temp = [...boxState];
+    const selectedBox = temp.find((item) => item.i === i && item.j === j);
+    selectedBox.isClicked = true;
+    selectedBox.order = order + 1;
+    setOrder(() => order + 1);
+    temp.sort((a, b) => (a.order > b.order ? 1 : -1));
+    setBoxState(temp);
   };
 
-  const removeGreen = () => {
-    if (noOfBoxesClicked.length === noOfBoxes) {
-      for (let i = 0; i < noOfBoxesClicked.length; i++) {
-        let box = noOfBoxesClicked[i];
-        setTimeout(() => {
-          box.classList.remove('apply-animation-green');
-        }, i * 1000);
-      }
-    }
-    setNoOfBoxesClicked([]);
-  };
-
-  useEffect(() => {
-    if (noOfBoxesClicked.length === noOfBoxes) {
-      setTimeout(() => {
-        removeGreen();
-      }, 1500);
-    }
-  });
-
-  function getBoxes() {
+  function getBoxes(type) {
+    const boxesData = [];
     const boxes = [0, 1, 2].map((i) => {
       return (
         <div key={`row row-${i + 1}`} className={`row row-${i + 1}`}>
           {[0, 1, 2].map((j) => {
             if (!(i === 1 && j > 0)) {
+              if (type === 'initial') {
+                return boxesData.push({ i, j, isClicked: false, order: null });
+              }
               return (
                 <div
-                  onClick={changeToGreen}
+                  onClick={() => changeToGreen(i, j)}
                   key={`row-${i + 1}-col-${j + 1} box`}
-                  className={`row-${i + 1}-col-${j + 1} box`}></div>
+                  className={`row-${i + 1}-col-${j + 1} box ${
+                    boxState.find(
+                      (box) => box.i === i && box.j === j && box.isClicked
+                    ) && 'apply-animation-green'
+                  }`}></div>
               );
             }
             return undefined;
@@ -53,8 +44,32 @@ function App() {
         </div>
       );
     });
+    if (type === 'initial') {
+      return boxesData;
+    }
     return boxes;
   }
+
+  useEffect(() => {
+    if (order === noOfBoxes) {
+      setIsAllClicked(true);
+    }
+  }, [order]);
+
+  useEffect(() => {
+    if (isAllClicked) {
+      boxState.forEach((box, index) => {
+        setTimeout(() => {
+          let temp = [...boxState];
+          temp[index].isClicked = false;
+          temp[index].order = null;
+          setBoxState(temp);
+        }, 1000 * (index + 1));
+      });
+      setOrder(0);
+      setIsAllClicked(false);
+    }
+  }, [isAllClicked, boxState]);
 
   return (
     <div className='App'>
